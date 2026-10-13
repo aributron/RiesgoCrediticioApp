@@ -1,0 +1,16 @@
+# .NET Core
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.userosscache
+*.sln.docuser
+
+# User-specific files
+.vs/
+.vscode/
+.idea/
+
+# App Settings (Sensitive Data)
+appsettings.json

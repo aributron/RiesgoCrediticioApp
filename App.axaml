@@ -1,0 +1,77 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="RiesgoFiscalApp.App"
+             RequestedThemeVariant="Light">
+    <Application.Resources>
+        <SolidColorBrush x:Key="WindowBackground" Color="#F4F7FB" />
+        <SolidColorBrush x:Key="ShellBackground" Color="#0B1220" />
+        <SolidColorBrush x:Key="SidebarBackground" Color="#0F172A" />
+        <SolidColorBrush x:Key="SidebarPrimaryText" Color="White" />
+        <SolidColorBrush x:Key="SidebarSecondaryText" Color="#94A3B8" />
+        <SolidColorBrush x:Key="TopBarBackground" Color="#08121F" />
+        <SolidColorBrush x:Key="PanelBackground" Color="#001529" />
+        <SolidColorBrush x:Key="MainPanelBackground" Color="#F8FAFC" />
+        <SolidColorBrush x:Key="CardBackground" Color="White" />
+        <SolidColorBrush x:Key="PageForeground" Color="#111827" />
+        <SolidColorBrush x:Key="SecondaryForeground" Color="#4B5563" />
+        <SolidColorBrush x:Key="SubtleForeground" Color="#6B7280" />
+        <SolidColorBrush x:Key="BorderPanelBackground" Color="#F1F5F9" />
+        <SolidColorBrush x:Key="InputBackground" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="InputForeground" Color="#111827" />
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+        <Style Selector="Button.Primary">
+            <Setter Property="Background" Value="#0052CC"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.Primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#003D99"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="ToggleButton.MenuButton">
+            <Setter Property="Foreground" Value="#94A3B8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="16,14" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="ToggleButton.MenuButton:pointerover">
+            <Setter Property="Background" Value="#122236" />
+            <Setter Property="Foreground" Value="#E2E8F0" />
+        </Style>
+        <Style Selector="ToggleButton.MenuButton:checked">
+            <Setter Property="Background" Value="#1D2B45" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        
+        <Style Selector="Border.Card">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BoxShadow" Value="0 4 10 0 #15000000"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="Margin" Value="10"/>
+        </Style>
+
+        <Style Selector="TextBox">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+    </Application.Styles>
+</Application>

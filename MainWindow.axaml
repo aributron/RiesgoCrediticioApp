@@ -1,0 +1,287 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RiesgoFiscalApp.ViewModels"
+        x:Class="RiesgoFiscalApp.MainWindow"
+        Title="Aura Banking - Auditoría Fiscal Dinámica" Height="900" Width="1200"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackground}"
+        FontFamily="Inter, Segoe UI, sans-serif">
+    
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Grid ColumnDefinitions="260,*" Background="{DynamicResource ShellBackground}">
+
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBackground}" Padding="24">
+            <StackPanel VerticalAlignment="Stretch" Spacing="24">
+                <StackPanel>
+                    <TextBlock Text="Aura Banking" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource SidebarPrimaryText}" />
+                    <TextBlock Text="Auditoría Fiscal" FontSize="12" Foreground="{DynamicResource SidebarSecondaryText}" Margin="0,6,0,0" />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <ToggleButton Classes="MenuButton" Content="Dashboard" IsChecked="{Binding IsDashboardSection, Mode=TwoWay}" />
+                    <ToggleButton Classes="MenuButton" Content="Clientes" IsChecked="{Binding IsClientesSection, Mode=TwoWay}" />
+                    <ToggleButton Classes="MenuButton" Content="Auditoría" IsChecked="{Binding IsAuditoriaSection, Mode=TwoWay}" />
+                    <ToggleButton Classes="MenuButton" Content="Configuración" IsChecked="{Binding IsConfiguracionSection, Mode=TwoWay}" />
+                </StackPanel>
+
+                <Border Background="{DynamicResource PanelBackground}" CornerRadius="14" Padding="16" Margin="0,24,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Activo" FontSize="10" Foreground="{DynamicResource SidebarSecondaryText}" />
+                        <TextBlock Text="Auditoría Inteligente" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource SidebarPrimaryText}" Margin="0,5,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Background="{DynamicResource TopBarBackground}" Padding="22" Margin="20" CornerRadius="18">
+                <StackPanel>
+                    <TextBlock Text="{Binding SelectedSection}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource SidebarPrimaryText}" />
+                    <TextBlock Text="Control central de auditoría, clientes y riesgo en un panel moderno." FontSize="13" Foreground="{DynamicResource SidebarSecondaryText}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" Margin="20,0,20,20" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="20">
+                    <Border Background="{DynamicResource MainPanelBackground}" CornerRadius="18" Padding="24" IsVisible="{Binding IsDashboardSection}">
+                        <StackPanel Spacing="18">
+                            <TextBlock Text="Bienvenido al Dashboard" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
+                            <TextBlock Text="Revisa el estado general de tus clientes y métricas de riesgo." FontSize="13" Foreground="{DynamicResource SecondaryForeground}" />
+
+                            <Grid ColumnDefinitions="*,*,*,*" RowDefinitions="Auto">
+                                <Border Background="{DynamicResource CardBackground}" CornerRadius="14" Padding="18" Margin="0,0,16,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Clientes" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                        <TextBlock Text="{Binding ClientCount}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" Margin="0,10,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource CardBackground}" CornerRadius="14" Padding="18">
+                                    <StackPanel>
+                                        <TextBlock Text="Auditorías" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                        <TextBlock Text="{Binding AuditedClients}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" Margin="0,10,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource CardBackground}" CornerRadius="14" Padding="18">
+                                    <StackPanel>
+                                        <TextBlock Text="Riesgo promedio" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                        <TextBlock Text="{Binding AverageRiskScore, StringFormat='{}{0}%'}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" Margin="0,10,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Background="{DynamicResource CardBackground}" CornerRadius="14" Padding="18">
+                                    <StackPanel>
+                                        <TextBlock Text="Portafolio" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                        <TextBlock Text="{Binding TotalPortfolio}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" Margin="0,10,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Border Background="{DynamicResource CardBackground}" CornerRadius="14" Padding="20" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Resumen de riesgo" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                    <TextBlock Text="{Binding RiskSummary}" FontSize="22" FontWeight="Bold" Foreground="#2563EB" Margin="0,10,0,0" />
+                                    <TextBlock Text="Este dashboard muestra métricas simuladas basadas en los clientes que tienes registrados." FontSize="12" Foreground="{DynamicResource SecondaryForeground}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource MainPanelBackground}" CornerRadius="18" Padding="24" IsVisible="{Binding IsClientesSection}">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Gestión de clientes" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
+                            <TextBlock Text="Lista simulada de clientes creados para mostrar el estado del sistema." FontSize="13" Foreground="{DynamicResource SecondaryForeground}" />
+
+                            <Border Background="{DynamicResource CardBackground}" CornerRadius="16" Padding="16" Margin="0,16,0,0">
+                                <ItemsControl ItemsSource="{Binding SimulatedClients}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource CardBackground}" CornerRadius="12" Padding="16" Margin="0,0,0,12">
+                                                <Grid ColumnDefinitions="2*,1.2*,1.5*,1*">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Nombre}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                                        <TextBlock Text="{Binding Clasificacion}" FontSize="12" Foreground="{DynamicResource SubtleForeground}" Margin="0,4,0,0" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="CUIT / CUIL" FontSize="10" Foreground="{DynamicResource SubtleForeground}" />
+                                                        <TextBlock Text="{Binding CuitCuil}" FontSize="13" Foreground="{DynamicResource PageForeground}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="Monto Operado" FontSize="10" Foreground="{DynamicResource SubtleForeground}" />
+                                                        <TextBlock Text="{Binding MontoOperado, StringFormat='{}{0:C0}'}" FontSize="13" Foreground="{DynamicResource PageForeground}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="3" HorizontalAlignment="Right">
+                                                        <TextBlock Text="Edad" FontSize="10" Foreground="{DynamicResource SubtleForeground}" />
+                                                        <TextBlock Text="{Binding Edad}" FontSize="13" Foreground="{DynamicResource PageForeground}" />
+                                                        <TextBlock Text="PEP: {Binding EsPep}" FontSize="10" Foreground="{DynamicResource SubtleForeground}" Margin="0,8,0,0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource CardBackground}" CornerRadius="18" Padding="24" IsVisible="{Binding IsAuditoriaSection}">
+                        <Grid>
+                            <Border Background="{DynamicResource TopBarBackground}" Height="300" VerticalAlignment="Top">
+                                <TextBlock Text="Auditoría Argentina" Foreground="White" Opacity="0.05" FontSize="100" FontWeight="Black" Margin="20" />
+                            </Border>
+
+                            <Grid Margin="40,40,40,40">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <StackPanel HorizontalAlignment="Center" Margin="0,0,0,30">
+                                    <TextBlock Text="Alta de Cuenta Aura" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" />
+                                    <TextBlock Text="Cumplimiento BCRA / UIF con Auditoría de IA" Foreground="#CCD9FF" FontSize="16" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                </StackPanel>
+
+                                <Border Grid.Row="1" Classes="Card" MaxWidth="1150" VerticalAlignment="Top">
+                                    <Grid ColumnDefinitions="1.3*, 1.5*">
+                                        <StackPanel Grid.Column="0" Margin="10,0,30,0">
+                                            <TextBlock Text="1. Información Fiscal" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,15" Foreground="#333" />
+                                            
+                                            <Label Content="Perfil del Titular" FontSize="12" Foreground="Gray" />
+                                            <ComboBox ItemsSource="{Binding CustomerTypes}" SelectedItem="{Binding CurrentCustomer.Clasificacion}" HorizontalAlignment="Stretch" Margin="0,0,0,15" />
+
+                                            <Label Content="Nombre / Razón Social" FontSize="12" Foreground="Gray" />
+                                            <TextBox Text="{Binding CurrentCustomer.Nombre}" Watermark="Ej: Alberto Fernandez" Margin="0,0,0,10" />
+                                            
+                                            <Label Content="CUIT / CUIL" FontSize="12" Foreground="Gray" />
+                                            <TextBox Text="{Binding CurrentCustomer.CuitCuil}" Watermark="XX-XXXXXXXX-X" Margin="0,0,0,10" />
+
+                                            <CheckBox IsChecked="{Binding CurrentCustomer.AceptaDeclaracionJurada}" Margin="0,5">
+                                                <TextBlock Text="Declaro la veracidad de los datos adjuntos" FontSize="11" TextWrapping="Wrap" />
+                                            </CheckBox>
+
+                                            <Separator Margin="0,15" />
+
+                                            <TextBlock Text="2. Documentación Obligatoria" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#555" />
+                                            
+                                            <Button Content="📄 Adjuntar DDJJ (Todas las entidades)" Command="{Binding AddDocumentCommand}" CommandParameter="DDJJ" HorizontalAlignment="Stretch" Margin="0,0,0,5" Background="#F0F4FF" Foreground="#0052CC" FontWeight="SemiBold" />
+
+                                            <StackPanel Margin="0,10,0,0">
+                                                <StackPanel IsVisible="{Binding IsMonotributista}">
+                                                    <Button Content="📎 Comprobante Monotributo" Command="{Binding AddDocumentCommand}" CommandParameter="Comprobante Monotributo" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                    <Button Content="📎 Adjuntar 3 Facturas C" Command="{Binding AddDocumentCommand}" CommandParameter="Factura" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                </StackPanel>
+
+                                                <StackPanel IsVisible="{Binding IsResponsableInscripto}">
+                                                    <Button Content="📎 Adjuntar 3 Posiciones IVA" Command="{Binding AddDocumentCommand}" CommandParameter="Posición IVA" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                    <Button Content="📎 Credencial Autónomo" Command="{Binding AddDocumentCommand}" CommandParameter="Autónomo" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                    <Button Content="📎 Facturas Emitidas" Command="{Binding AddDocumentCommand}" CommandParameter="Factura" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                </StackPanel>
+
+                                                <StackPanel IsVisible="{Binding IsRelacionDependencia}">
+                                                    <Button Content="📎 Recibo de Sueldo (Último)" Command="{Binding AddDocumentCommand}" CommandParameter="Recibo Sueldo" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                </StackPanel>
+                                                
+                                                <StackPanel IsVisible="{Binding IsPersonaJuridica}">
+                                                    <Button Content="📎 Estatuto Social" Command="{Binding AddDocumentCommand}" CommandParameter="Estatuto" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                    <Button Content="📎 Adjuntar 3 Posiciones IVA" Command="{Binding AddDocumentCommand}" CommandParameter="Posición IVA" HorizontalAlignment="Stretch" Margin="0,0,0,5" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            
+                                            <ListBox ItemsSource="{Binding Documents}" Height="80" Background="#F9FAFC" CornerRadius="6" Margin="0,10,0,0">
+                                                <ListBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="✅ " Foreground="#059669" />
+                                                            <TextBlock Text="{Binding Tipo}" FontSize="11" FontWeight="Bold" Margin="0,0,10,0" />
+                                                            <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="Gray" />
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ListBox.ItemTemplate>
+                                            </ListBox>
+                                        </StackPanel>
+
+                                        <Border Grid.Column="1" Background="#F9FAFC" CornerRadius="8" Padding="25">
+                                            <StackPanel>
+                                                <TextBlock Text="3. Proceso de Auditoría IA" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#333" />
+                                                
+                                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Seleccionar Motor de IA" FontSize="12" Foreground="Gray" />
+                                                        <ComboBox ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding SelectedModel}" HorizontalAlignment="Stretch" Margin="0,5,10,0" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Classes="Primary" Content="Ejecutar Análisis" Command="{Binding EvaluateCommand}" VerticalAlignment="Bottom" Height="40" />
+                                                </Grid>
+
+                                                <Separator Margin="0,0,0,20" />
+
+                                                <Border Background="#E6EEFF" Padding="15" CornerRadius="6" BorderBrush="#CCE0FF" BorderThickness="1" Margin="0,0,0,20">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="🤖" FontSize="20" Margin="0,0,10,0" />
+                                                        <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="#0040A6" FontSize="13" FontWeight="Medium" MaxWidth="450" />
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <StackPanel IsVisible="{Binding AssessmentResult, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                                    <Border Background="White" BorderBrush="#EEE" BorderThickness="1" CornerRadius="10" Padding="15">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <StackPanel>
+                                                                <TextBlock Text="DICTAMEN FISCAL" FontSize="10" FontWeight="Bold" Foreground="Gray" Margin="0,0,0,5" />
+                                                                <TextBlock Text="{Binding AssessmentResult.DictamenPreliminar}" FontSize="20" FontWeight="Black" Foreground="#0052CC" />
+                                                            </StackPanel>
+                                                            <Border Grid.Column="1" Background="#E6FFFA" CornerRadius="20" Padding="15,5">
+                                                                 <TextBlock Text="{Binding AssessmentResult.ScoreRiesgo, StringFormat='Score: {0}/100'}" Foreground="#2D3748" FontWeight="Bold" />
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+
+                                                    <TextBlock Text="OBSERVACIONES TÉCNICAS" FontSize="10" FontWeight="Bold" Foreground="Gray" Margin="0,20,0,5" />
+                                                    <TextBlock Text="{Binding AssessmentResult.Observaciones}" TextWrapping="Wrap" FontSize="12" LineHeight="18" Foreground="#4A5568" />
+                                                    
+                                                    <Button Classes="Primary" Content="ACTIVAR CUENTA AURA" 
+                                                            Command="{Binding FinishOnboardingCommand}" 
+                                                            IsVisible="{Binding CanUnlockFeatures}"
+                                                            Background="#10B981" Margin="0,30,0,0" Height="50" HorizontalAlignment="Stretch" FontSize="16" HorizontalContentAlignment="Center" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Border Background="{DynamicResource MainPanelBackground}" CornerRadius="18" Padding="24" IsVisible="{Binding IsConfiguracionSection}">
+                        <StackPanel Spacing="18">
+                            <TextBlock Text="Configuración" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
+                            <TextBlock Text="Ajusta las preferencias visuales de la aplicación." FontSize="13" Foreground="{DynamicResource SecondaryForeground}" />
+
+                            <Border Background="White" CornerRadius="16" Padding="20" Margin="0,12,0,0">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Tema de la aplicación" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                    <TextBlock Text="Selecciona modo claro u oscuro para la interfaz." FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                    <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" HorizontalAlignment="Left" Width="220" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{DynamicResource BorderPanelBackground}" CornerRadius="14" Padding="16" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Vista previa del tema" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                    <TextBlock Text="El cambio se aplicará automáticamente cuando selecciones una opción." FontSize="12" Foreground="#475569" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
