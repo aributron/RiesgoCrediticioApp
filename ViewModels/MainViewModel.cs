@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -15,356 +12,271 @@ using Avalonia.Styling;
 using RiesgoFiscalApp.Models;
 using RiesgoFiscalApp.Services;
 
-namespace RiesgoFiscalApp.ViewModels
+namespace RiesgoFiscalApp.ViewModels;
+
+public class MainViewModel : INotifyPropertyChanged
 {
-    public class MainViewModel : INotifyPropertyChanged
+    private readonly SimulatedCreditRiskService _riskService = new();
+    private CreditApplication _currentApplication = new();
+    private string _selectedSection = "Evaluación";
+    private string _selectedTheme = "Claro";
+    private string _incomeInput = string.Empty;
+    private string _amountInput = string.Empty;
+    private string _termInput = string.Empty;
+    private string _statusMessage = string.Empty;
+    private bool _isBusy;
+
+    public MainViewModel()
     {
-        private readonly IAgentService _agentService;
-        private Customer? _currentCustomer;
-        private RiskAssessment? _assessmentResult;
-        private bool _isBusy;
-        private string _statusMessage = string.Empty;
-        private string _selectedModel;
-        private string _selectedSection = "Auditoría";
-        private string _selectedTheme = "Claro";
-        private bool _isOnboarded = false;
-        private bool _canUnlockFeatures = false;
+        EvaluateCommand = new RelayCommand(_ => Evaluate(), _ => !IsBusy && GetValidationErrors().Count == 0);
+        AddDocumentCommand = new RelayCommand(async _ => await PickAndAddDocumentsAsync(), _ => !IsBusy);
+        RemoveDocumentCommand = new RelayCommand(
+            item => { if (item is Document document) Documents.Remove(document); }, _ => !IsBusy);
+        NewApplicationCommand = new RelayCommand(_ => StartNewApplication(), _ => !IsBusy);
+        AttachCurrentApplication();
+        Applications.Add(CurrentApplication);
+        RefreshValidation();
+        ApplyTheme();
+    }
 
-        public MainViewModel()
+    public ObservableCollection<CreditApplication> Applications { get; } = new();
+    public CreditApplication CurrentApplication => _currentApplication;
+    public Customer CurrentCustomer => CurrentApplication.Solicitante;
+    public ObservableCollection<Document> Documents => CurrentApplication.Documents;
+    public RiskAssessment? AssessmentResult => CurrentApplication.Resultado;
+    public bool HasAssessment => AssessmentResult != null;
+    public int ApplicationCount => Applications.Count;
+    public int EvaluatedCount => Applications.Count(a => a.Resultado != null);
+    public List<string> ThemeOptions { get; } = new() { "Claro", "Oscuro" };
+    public RelayCommand EvaluateCommand { get; }
+    public RelayCommand AddDocumentCommand { get; }
+    public RelayCommand RemoveDocumentCommand { get; }
+    public RelayCommand NewApplicationCommand { get; }
+
+    // Texto para que valores vacíos o inválidos también invaliden la simulación.
+    public string IncomeInput
+    {
+        get => _incomeInput;
+        set
         {
-            _agentService = new OpenAIAgentService();
-            
-            Documents = new ObservableCollection<Document>();
-            CustomerTypes = new List<string> { 
-                "PF - Monotributista", 
-                "PF - Responsable Inscripto", 
-                "PF - Relación Dependencia",
-                "Persona Jurídica (S.A./S.R.L.)" 
-            };
-            AvailableModels = new List<string> { "Gemini 3 Flash Preview", "OpenAI GPT-4o", "Claude 3.5 Sonnet" };
-            ThemeOptions = new List<string> { "Claro", "Oscuro" };
-            _selectedModel = "Gemini 3 Flash Preview";
-            _selectedTheme = "Claro";
-
-            SimulatedClients = new ObservableCollection<Customer>();
-            LoadSimulatedClients();
-            UpdateDashboardMetrics();
-            
-            EvaluateCommand = new RelayCommand(async _ => await EvaluateRiskAsync(), _ => CanAnalyze());
-            AddDocumentCommand = new RelayCommand(async param => await PickAndAddDocumentAsync(param as string));
-            FinishOnboardingCommand = new RelayCommand(_ => ActivateAccountAura(), _ => CanUnlockFeatures);
-
-            CurrentCustomer = new Customer { Clasificacion = "PF - Monotributista" };
-            SelectedSection = "Auditoría";
-            ApplyTheme();
+            _incomeInput = value;
+            TryAmount(value, out var income);
+            CurrentCustomer.IngresoMensualDeclarado = income;
+            OnPropertyChanged();
+            InputsChanged();
         }
-
-        public List<string> CustomerTypes { get; }
-        public List<string> AvailableModels { get; }
-        public List<string> ThemeOptions { get; }
-        public ObservableCollection<Customer> SimulatedClients { get; }
-
-        public string SelectedModel
+    }
+    public string AmountInput
+    {
+        get => _amountInput;
+        set
         {
-            get => _selectedModel;
-            set { _selectedModel = value; OnPropertyChanged(); }
+            _amountInput = value;
+            TryAmount(value, out var amount);
+            CurrentApplication.MontoSolicitado = amount;
+            OnPropertyChanged();
+            InputsChanged();
         }
-
-        public string SelectedTheme
+    }
+    public string TermInput
+    {
+        get => _termInput;
+        set
         {
-            get => _selectedTheme;
-            set
-            {
-                if (_selectedTheme == value) return;
-                _selectedTheme = value;
-                OnPropertyChanged();
-                ApplyTheme();
-            }
+            _termInput = value;
+            int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var term);
+            CurrentApplication.PlazoMeses = term;
+            OnPropertyChanged();
+            InputsChanged();
         }
-
-        public int ClientCount => SimulatedClients.Count;
-        public int AuditedClients { get; private set; }
-        public int AverageRiskScore { get; private set; }
-        public string TotalPortfolio => SimulatedClients.Sum(c => c.MontoOperado).ToString("C0");
-
-        public string RiskSummary => AverageRiskScore switch
+    }
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        private set { _statusMessage = value; OnPropertyChanged(); }
+    }
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set { _isBusy = value; OnPropertyChanged(); RefreshCommands(); }
+    }
+    public string SelectedSection
+    {
+        get => _selectedSection;
+        set
         {
-            >= 75 => "Bajo",
-            >= 45 => "Medio",
-            _ => "Alto"
-        };
-
-        public string SelectedSection
-        {
-            get => _selectedSection;
-            set
-            {
-                if (_selectedSection == value) return;
-                _selectedSection = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(IsDashboardSection));
-                OnPropertyChanged(nameof(IsClientesSection));
-                OnPropertyChanged(nameof(IsAuditoriaSection));
-                OnPropertyChanged(nameof(IsConfiguracionSection));
-            }
+            _selectedSection = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsDashboardSection));
+            OnPropertyChanged(nameof(IsApplicationsSection));
+            OnPropertyChanged(nameof(IsEvaluationSection));
+            OnPropertyChanged(nameof(IsConfiguracionSection));
         }
+    }
+    public bool IsDashboardSection
+    {
+        get => SelectedSection == "Dashboard";
+        set { if (value) SelectedSection = "Dashboard"; }
+    }
+    public bool IsApplicationsSection
+    {
+        get => SelectedSection == "Solicitudes";
+        set { if (value) SelectedSection = "Solicitudes"; }
+    }
+    public bool IsEvaluationSection
+    {
+        get => SelectedSection == "Evaluación";
+        set { if (value) SelectedSection = "Evaluación"; }
+    }
+    public bool IsConfiguracionSection
+    {
+        get => SelectedSection == "Configuración";
+        set { if (value) SelectedSection = "Configuración"; }
+    }
+    public string SelectedTheme
+    {
+        get => _selectedTheme;
+        set { _selectedTheme = value; OnPropertyChanged(); ApplyTheme(); }
+    }
 
-        public bool IsDashboardSection
+    private static bool TryAmount(string input, out decimal value) =>
+        decimal.TryParse(input, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite |
+            NumberStyles.AllowTrailingWhite, CultureInfo.GetCultureInfo("es-AR"), out value) && value > 0;
+
+    private List<string> GetValidationErrors()
+    {
+        var errors = new List<string>();
+        if (string.IsNullOrWhiteSpace(CurrentCustomer.Nombre)) errors.Add("nombre");
+        var dni = CurrentCustomer.Dni.Trim();
+        if (dni.Length < 7 || dni.Length > 8 || !dni.All(c => c >= '0' && c <= '9'))
+            errors.Add("DNI de 7 u 8 dígitos, sin puntos");
+        if (!TryAmount(IncomeInput, out _)) errors.Add("ingreso mensual positivo");
+        if (!TryAmount(AmountInput, out _)) errors.Add("monto solicitado positivo");
+        if (!int.TryParse(TermInput, NumberStyles.None, CultureInfo.InvariantCulture, out var term) || term <= 0)
+            errors.Add("plazo entero positivo en meses");
+        if (!Documents.Any(d => d.CreditApplicationId == CurrentApplication.Id &&
+            d.Tipo == "Recibo de sueldo" && File.Exists(d.FilePath) &&
+            string.Equals(Path.GetExtension(d.FilePath), ".pdf", StringComparison.OrdinalIgnoreCase)))
+            errors.Add("al menos un recibo de sueldo PDF local");
+        return errors;
+    }
+
+    private void AttachCurrentApplication()
+    {
+        CurrentCustomer.PropertyChanged += OnCustomerChanged;
+        Documents.CollectionChanged += OnDocumentsChanged;
+    }
+    private void OnCustomerChanged(object? sender, PropertyChangedEventArgs e) => InputsChanged();
+    private void OnDocumentsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        InputsChanged();
+
+    private void InputsChanged()
+    {
+        CurrentApplication.Resultado = null;
+        OnPropertyChanged(nameof(AssessmentResult));
+        OnPropertyChanged(nameof(HasAssessment));
+        OnPropertyChanged(nameof(EvaluatedCount));
+        RefreshValidation();
+    }
+    private void RefreshCommands()
+    {
+        EvaluateCommand.RaiseCanExecuteChanged();
+        AddDocumentCommand.RaiseCanExecuteChanged();
+        RemoveDocumentCommand.RaiseCanExecuteChanged();
+        NewApplicationCommand.RaiseCanExecuteChanged();
+    }
+    private void RefreshValidation()
+    {
+        var errors = GetValidationErrors();
+        StatusMessage = errors.Count == 0
+            ? "Solicitud lista para simular. El contenido de los documentos no se valida."
+            : "Completar: " + string.Join("; ", errors) + ".";
+        RefreshCommands();
+    }
+
+    private void Evaluate()
+    {
+        if (IsBusy) return;
+        if (GetValidationErrors().Count != 0)
         {
-            get => SelectedSection == "Dashboard";
-            set { if (value) SelectedSection = "Dashboard"; }
+            InputsChanged();
+            return;
         }
+        TryAmount(IncomeInput, out var income);
+        TryAmount(AmountInput, out var amount);
+        CurrentCustomer.IngresoMensualDeclarado = income;
+        CurrentApplication.MontoSolicitado = amount;
+        CurrentApplication.PlazoMeses = int.Parse(TermInput, CultureInfo.InvariantCulture);
+        CurrentApplication.Resultado = _riskService.Evaluate();
+        OnPropertyChanged(nameof(AssessmentResult));
+        OnPropertyChanged(nameof(HasAssessment));
+        OnPropertyChanged(nameof(EvaluatedCount));
+        StatusMessage = "Simulación disponible para revisión del analista.";
+    }
 
-        public bool IsClientesSection
+    private void StartNewApplication()
+    {
+        CurrentCustomer.PropertyChanged -= OnCustomerChanged;
+        Documents.CollectionChanged -= OnDocumentsChanged;
+        _currentApplication = new CreditApplication();
+        _incomeInput = _amountInput = _termInput = string.Empty;
+        AttachCurrentApplication();
+        Applications.Add(CurrentApplication);
+        foreach (var name in new[] { nameof(CurrentApplication), nameof(CurrentCustomer), nameof(Documents),
+            nameof(IncomeInput), nameof(AmountInput), nameof(TermInput), nameof(ApplicationCount),
+            nameof(AssessmentResult), nameof(HasAssessment) })
+            OnPropertyChanged(name);
+        RefreshValidation();
+        SelectedSection = "Evaluación";
+    }
+
+    private async Task PickAndAddDocumentsAsync()
+    {
+        if (IsBusy) return;
+        var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+        var topLevel = window == null ? null : TopLevel.GetTopLevel(window);
+        if (topLevel == null)
         {
-            get => SelectedSection == "Clientes";
-            set { if (value) SelectedSection = "Clientes"; }
+            StatusMessage = "No se pudo abrir el selector de archivos.";
+            return;
         }
-
-        public bool IsAuditoriaSection
+        IsBusy = true;
+        try
         {
-            get => SelectedSection == "Auditoría";
-            set { if (value) SelectedSection = "Auditoría"; }
-        }
-
-        public bool IsConfiguracionSection
-        {
-            get => SelectedSection == "Configuración";
-            set { if (value) SelectedSection = "Configuración"; }
-        }
-
-        public bool IsOnboarded
-        {
-            get => _isOnboarded;
-            set { _isOnboarded = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowOnboarding)); }
-        }
-
-        public bool ShowOnboarding => !IsOnboarded;
-
-        public bool CanUnlockFeatures
-        {
-            get => _canUnlockFeatures;
-            set { _canUnlockFeatures = value; OnPropertyChanged(); ((RelayCommand)FinishOnboardingCommand).RaiseCanExecuteChanged(); }
-        }
-
-        public Customer CurrentCustomer
-        {
-            get => _currentCustomer!;
-            set 
-            { 
-                if (_currentCustomer != null) _currentCustomer.PropertyChanged -= OnCustomerPropertyChanged;
-                _currentCustomer = value; 
-                if (_currentCustomer != null) _currentCustomer.PropertyChanged += OnCustomerPropertyChanged;
-                OnPropertyChanged(); 
-                ValidateInputs(); 
-            }
-        }
-
-        public bool IsMonotributista => CurrentCustomer?.Clasificacion == "PF - Monotributista";
-        public bool IsResponsableInscripto => CurrentCustomer?.Clasificacion == "PF - Responsable Inscripto";
-        public bool IsRelacionDependencia => CurrentCustomer?.Clasificacion == "PF - Relación Dependencia";
-        public bool IsPersonaJuridica => CurrentCustomer?.Clasificacion == "Persona Jurídica (S.A./S.R.L.)";
-
-        private void OnCustomerPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(Customer.Clasificacion))
-            {
-                Documents.Clear(); // Reiniciamos docs al cambiar de perfil
-                OnPropertyChanged(nameof(IsMonotributista));
-                OnPropertyChanged(nameof(IsResponsableInscripto));
-                OnPropertyChanged(nameof(IsRelacionDependencia));
-                OnPropertyChanged(nameof(IsPersonaJuridica));
-            }
-            ValidateInputs();
-        }
-
-        public RiskAssessment? AssessmentResult
-        {
-            get => _assessmentResult;
-            set { _assessmentResult = value; OnPropertyChanged(); }
-        }
-
-        public ObservableCollection<Document> Documents { get; }
-
-        public bool IsBusy
-        {
-            get => _isBusy;
-            set { _isBusy = value; OnPropertyChanged(); ValidateInputs(); }
-        }
-
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
-
-        public RelayCommand EvaluateCommand { get; }
-        public ICommand AddDocumentCommand { get; }
-        public ICommand FinishOnboardingCommand { get; }
-
-        private bool CanAnalyze()
-        {
-            if (Documents == null || _currentCustomer == null) return false;
-            
-            bool hasDdjj = Documents.Any(d => d.Tipo == "DDJJ");
-            if (!hasDdjj || !CurrentCustomer.AceptaDeclaracionJurada) return false;
-
-            switch (CurrentCustomer.Clasificacion)
-            {
-                case "PF - Monotributista":
-                    return Documents.Any(d => d.Tipo == "Comprobante Monotributo") && 
-                           Documents.Count(d => d.Tipo == "Factura") >= 3;
-
-                case "PF - Responsable Inscripto":
-                    return Documents.Count(d => d.Tipo == "Posición IVA") >= 3 && 
-                           Documents.Any(d => d.Tipo == "Autónomo") &&
-                           Documents.Any(d => d.Tipo == "Factura");
-
-                case "PF - Relación Dependencia":
-                    return Documents.Any(d => d.Tipo == "Recibo Sueldo");
-
-                case "Persona Jurídica (S.A./S.R.L.)":
-                    return Documents.Any(d => d.Tipo == "Estatuto") && 
-                           Documents.Count(d => d.Tipo == "Posición IVA") >= 3;
-
-                default:
-                    return false;
-            }
-        }
-
-        private void ValidateInputs()
-        {
-            if (EvaluateCommand == null) return;
-            EvaluateCommand.RaiseCanExecuteChanged();
-
-            if (!IsBusy && _currentCustomer != null)
-            {
-                var missing = new List<string>();
-                if (!Documents.Any(d => d.Tipo == "DDJJ")) missing.Add("DDJJ");
-
-                switch (CurrentCustomer.Clasificacion)
-                {
-                    case "PF - Monotributista":
-                        if (!Documents.Any(d => d.Tipo == "Comprobante Monotributo")) missing.Add("Comprobante Monotributo");
-                        int facturas = Documents.Count(d => d.Tipo == "Factura");
-                        if (facturas < 3) missing.Add($"Facturas ({facturas}/3)");
-                        break;
-
-                    case "PF - Responsable Inscripto":
-                        int ivas = Documents.Count(d => d.Tipo == "Posición IVA");
-                        if (ivas < 3) missing.Add($"Posiciones IVA ({ivas}/3)");
-                        if (!Documents.Any(d => d.Tipo == "Autónomo")) missing.Add("Credencial Autónomo");
-                        if (!Documents.Any(d => d.Tipo == "Factura")) missing.Add("Factura");
-                        break;
-
-                    case "PF - Relación Dependencia":
-                        if (!Documents.Any(d => d.Tipo == "Recibo Sueldo")) missing.Add("Recibo Sueldo");
-                        break;
-                }
-
-                if (missing.Any()) StatusMessage = "Faltante: " + string.Join(", ", missing);
-                else StatusMessage = "Documentación completa. Inicie auditoría.";
-            }
-        }
-
-        private async Task PickAndAddDocumentAsync(string? docType)
-        {
-            if (string.IsNullOrEmpty(docType)) return;
-
-            var topLevel = TopLevel.GetTopLevel((Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
-            if (topLevel == null) return;
-
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = $"Adjuntar {docType} (PDF)",
+                Title = "Adjuntar recibos de sueldo (PDF)",
                 AllowMultiple = true,
                 FileTypeFilter = new[] { FilePickerFileTypes.Pdf }
             });
-
+            var skipped = 0;
             foreach (var file in files)
             {
-                if (!file.Name.ToLower().EndsWith(".pdf")) continue;
-
-                Documents.Add(new Document 
-                { 
-                    Tipo = docType, 
-                    FileName = file.Name,
-                    FilePath = file.Path.LocalPath,
-                    ContenidoTexto = "Listo para auditoría..." 
-                });
-            }
-            StatusMessage = $"Documentos cargados exitosamente.";
-            ValidateInputs();
-        }
-
-        private async Task EvaluateRiskAsync()
-        {
-            IsBusy = true;
-            AssessmentResult = null;
-            CanUnlockFeatures = false;
-
-            try
-            {
-                StatusMessage = "Agentes de IA auditando perfiles fiscales...";
-                var docList = new List<Document>(Documents);
-                CurrentCustomer = await _agentService.ExtractDataFromDocumentsAsync(docList, CurrentCustomer, SelectedModel);
-                OnPropertyChanged(nameof(CurrentCustomer)); 
-                
-                AssessmentResult = await _agentService.EvaluateRiskAsync(CurrentCustomer, SelectedModel);
-                StatusMessage = AssessmentResult.DictamenPreliminar == "Cumple" ? "Perfil Aprobado." : "Perfil Rechazado.";
-                CanUnlockFeatures = AssessmentResult.DictamenPreliminar == "Cumple";
-            }
-            catch (Exception ex) { StatusMessage = $"❌ ERROR: {ex.Message}"; }
-            finally { IsBusy = false; }
-        }
-
-        private void LoadSimulatedClients()
-        {
-            SimulatedClients.Add(new Customer { Nombre = "Lucía Martínez", CuitCuil = "20-12345678-9", Clasificacion = "PF - Monotributista", MontoOperado = 420000, Edad = 29, EsPep = false });
-            SimulatedClients.Add(new Customer { Nombre = "Rodrigo Gómez", CuitCuil = "27-87654321-0", Clasificacion = "PF - Responsable Inscripto", MontoOperado = 910000, Edad = 41, EsPep = false });
-            SimulatedClients.Add(new Customer { Nombre = "Inversiones Alfa SRL", CuitCuil = "30-98765432-1", Clasificacion = "Persona Jurídica (S.A./S.R.L.)", MontoOperado = 3200000, Edad = 0, EsPep = false });
-            SimulatedClients.Add(new Customer { Nombre = "María Pérez", CuitCuil = "27-24681357-4", Clasificacion = "PF - Relación Dependencia", MontoOperado = 180000, Edad = 33, EsPep = false });
-            AuditedClients = 87;
-            AverageRiskScore = 62;
-            OnPropertyChanged(nameof(ClientCount));
-            OnPropertyChanged(nameof(AuditedClients));
-            OnPropertyChanged(nameof(AverageRiskScore));
-            OnPropertyChanged(nameof(TotalPortfolio));
-            OnPropertyChanged(nameof(RiskSummary));
-        }
-
-        private void UpdateDashboardMetrics()
-        {
-            AuditedClients = 87;
-            AverageRiskScore = 62;
-            OnPropertyChanged(nameof(AuditedClients));
-            OnPropertyChanged(nameof(AverageRiskScore));
-            OnPropertyChanged(nameof(RiskSummary));
-        }
-
-        private void ActivateAccountAura()
-        {
-            if (CurrentCustomer == null) return;
-
-            if (!string.IsNullOrWhiteSpace(CurrentCustomer.CuitCuil) &&
-                !SimulatedClients.Any(c => c.CuitCuil == CurrentCustomer.CuitCuil))
-            {
-                SimulatedClients.Add(new Customer
+                var path = file.TryGetLocalPath();
+                if (path == null || !File.Exists(path) ||
+                    !string.Equals(Path.GetExtension(path), ".pdf", StringComparison.OrdinalIgnoreCase))
                 {
-                    Nombre = CurrentCustomer.Nombre,
-                    CuitCuil = CurrentCustomer.CuitCuil,
-                    Clasificacion = CurrentCustomer.Clasificacion,
-                    MontoOperado = CurrentCustomer.MontoOperado,
-                    Edad = CurrentCustomer.Edad,
-                    EsPep = CurrentCustomer.EsPep
+                    skipped++;
+                    continue;
+                }
+                if (Documents.Any(d => string.Equals(d.FilePath, path, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                Documents.Add(new Document
+                {
+                    CreditApplicationId = CurrentApplication.Id,
+                    FileName = file.Name,
+                    FilePath = path
                 });
-                OnPropertyChanged(nameof(ClientCount));
-                OnPropertyChanged(nameof(TotalPortfolio));
             }
-
-            IsOnboarded = true;
-            StatusMessage = "Cliente agregado a Clientes y cuenta Aura activada.";
+            RefreshValidation();
+            if (skipped > 0) StatusMessage += " Se omitieron archivos que no son PDF locales disponibles.";
         }
+        catch (Exception ex)
+        {
+            StatusMessage = $"No se pudieron adjuntar los documentos: {ex.Message}";
+        }
+        finally { IsBusy = false; }
+    }
 
         private void ApplyTheme()
         {
@@ -391,10 +303,7 @@ namespace RiesgoFiscalApp.ViewModels
             resources["InputForeground"] = new SolidColorBrush(Color.Parse(isDark ? "#E5E7EB" : "#111827"));
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

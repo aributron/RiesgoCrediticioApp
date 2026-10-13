@@ -1,10 +1,11 @@
-namespace RiesgoFiscalApp.Models
+﻿namespace RiesgoFiscalApp.Models;
+
+public class RiskAssessment
 {
-    public class RiskAssessment
-    {
-        public double PorcentajeConsistencia { get; set; }
-        public int ScoreRiesgo { get; set; }
-        public string DictamenPreliminar { get; set; } = string.Empty; // Cumple, Cumple con observaciones, No cumple
-        public string Observaciones { get; set; } = string.Empty;
-    }
+    // Fracción entre 0 y 1, presentada como porcentaje en la interfaz.
+    public double ProbabilidadIncumplimiento { get; init; }
+    public string NivelRiesgo { get; init; } = string.Empty;
+    public bool EsSimulado => true;
+    public string Descripcion => "Simulación — sin modelo predictivo. Valores fijos de demostración, independientes de los datos del solicitante.";
 }
+

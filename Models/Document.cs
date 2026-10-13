@@ -1,10 +1,11 @@
-namespace RiesgoFiscalApp.Models
+﻿namespace RiesgoFiscalApp.Models;
+
+public class Document
 {
-    public class Document
-    {
-        public string Tipo { get; set; } = string.Empty; // e.g., "Recibo Sueldo", "DDJJ"
-        public string FileName { get; set; } = string.Empty;
-        public string FilePath { get; set; } = string.Empty;
-        public string ContenidoTexto { get; set; } = string.Empty; 
-    }
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid CreditApplicationId { get; init; }
+    public string Tipo { get; init; } = "Recibo de sueldo";
+    public string FileName { get; init; } = string.Empty;
+    public string FilePath { get; init; } = string.Empty;
 }
+
