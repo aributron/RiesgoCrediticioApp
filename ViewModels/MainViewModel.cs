@@ -17,6 +17,8 @@ namespace RiesgoFiscalApp.ViewModels;
 public class MainViewModel : INotifyPropertyChanged
 {
     private readonly SimulatedCreditRiskService _riskService = new();
+    private readonly IPdfTextExtractionService _pdfTextService;
+    private readonly IDocumentExtractionService _documentExtractionService;
     private CreditApplication _currentApplication = new();
     private string _selectedSection = "Evaluación";
     private string _selectedTheme = "Claro";
@@ -26,12 +28,16 @@ public class MainViewModel : INotifyPropertyChanged
     private string _statusMessage = string.Empty;
     private bool _isBusy;
 
-    public MainViewModel()
+    public MainViewModel(IPdfTextExtractionService pdfTextService, IDocumentExtractionService documentExtractionService)
     {
+        _pdfTextService = pdfTextService;
+        _documentExtractionService = documentExtractionService;
         EvaluateCommand = new RelayCommand(_ => Evaluate(), _ => !IsBusy && GetValidationErrors().Count == 0);
         AddDocumentCommand = new RelayCommand(async _ => await PickAndAddDocumentsAsync(), _ => !IsBusy);
         RemoveDocumentCommand = new RelayCommand(
-            item => { if (item is Document document) Documents.Remove(document); }, _ => !IsBusy);
+            item => { if (!IsBusy && item is Document document) Documents.Remove(document); }, _ => !IsBusy);
+        ProcessDocumentCommand = new RelayCommand(async item => await ProcessDocumentAsync(item as Document),
+            item => !IsBusy && item is Document document && Documents.Contains(document));
         NewApplicationCommand = new RelayCommand(_ => StartNewApplication(), _ => !IsBusy);
         AttachCurrentApplication();
         Applications.Add(CurrentApplication);
@@ -52,6 +58,7 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand AddDocumentCommand { get; }
     public RelayCommand RemoveDocumentCommand { get; }
     public RelayCommand NewApplicationCommand { get; }
+    public RelayCommand ProcessDocumentCommand { get; }
 
     // Texto para que valores vacíos o inválidos también invaliden la simulación.
     public string IncomeInput
@@ -184,12 +191,13 @@ public class MainViewModel : INotifyPropertyChanged
         AddDocumentCommand.RaiseCanExecuteChanged();
         RemoveDocumentCommand.RaiseCanExecuteChanged();
         NewApplicationCommand.RaiseCanExecuteChanged();
+        ProcessDocumentCommand.RaiseCanExecuteChanged();
     }
     private void RefreshValidation()
     {
         var errors = GetValidationErrors();
         StatusMessage = errors.Count == 0
-            ? "Solicitud lista para simular. El contenido de los documentos no se valida."
+            ? "Solicitud lista para simular. La extracción documental se procesa por separado."
             : "Completar: " + string.Join("; ", errors) + ".";
         RefreshCommands();
     }
@@ -216,6 +224,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void StartNewApplication()
     {
+        if (IsBusy) return;
         CurrentCustomer.PropertyChanged -= OnCustomerChanged;
         Documents.CollectionChanged -= OnDocumentsChanged;
         _currentApplication = new CreditApplication();
@@ -274,6 +283,44 @@ public class MainViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             StatusMessage = $"No se pudieron adjuntar los documentos: {ex.Message}";
+        }
+        finally { IsBusy = false; }
+    }
+
+    public async Task ProcessDocumentAsync(Document? document)
+    {
+        if (IsBusy || document == null || !Documents.Contains(document) ||
+            document.CreditApplicationId != CurrentApplication.Id) return;
+        IsBusy = true;
+        document.BeginProcessing();
+        try
+        {
+            var text = await _pdfTextService.ExtractTextAsync(document.FilePath);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                document.FailProcessing(DocumentProcessingStatus.NoText,
+                    "Este documento no pudo procesarse en esta versión: no contiene texto extraíble. OCR no disponible.");
+                return;
+            }
+            var data = await _documentExtractionService.ExtractAsync(text);
+            document.CompleteProcessing(data);
+        }
+        catch (InvalidDataException ex)
+        {
+            document.FailProcessing(DocumentProcessingStatus.Error, ex.Message);
+        }
+        catch (DocumentExtractionException ex)
+        {
+            document.FailProcessing(DocumentProcessingStatus.Error, ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            document.FailProcessing(DocumentProcessingStatus.Error, "El procesamiento fue cancelado. Podés reintentar.");
+        }
+        catch (Exception)
+        {
+            document.FailProcessing(DocumentProcessingStatus.Error,
+                "No se pudo procesar el recibo. Verificá el archivo y la configuración, y reintentá.");
         }
         finally { IsBusy = false; }
     }

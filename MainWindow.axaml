@@ -1,15 +1,11 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:RiesgoFiscalApp.ViewModels"
         x:Class="RiesgoFiscalApp.MainWindow"
         Title="Evaluación de riesgo crediticio" Height="900" Width="1200"
         MinWidth="900" MinHeight="650"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBackground}"
         FontFamily="Inter, Segoe UI, sans-serif">
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
     <Window.Styles>
         <Style Selector="TextBox">
             <Setter Property="Background" Value="{DynamicResource InputBackground}" />
@@ -98,7 +94,7 @@
                             </Grid>
                             <Grid ColumnDefinitions="*,*">
                                 <StackPanel Margin="0,0,24,0">
-                                    <TextBlock Text="1. Datos del solicitante" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,15" Foreground="{DynamicResource PageForeground}" />
+                                    <TextBlock Text="1. Datos declarados por el solicitante" TextWrapping="Wrap" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,15" Foreground="{DynamicResource PageForeground}" />
                                     <Label Content="Nombre y apellido" />
                                     <TextBox Text="{Binding CurrentCustomer.Nombre, Mode=TwoWay}" Watermark="Ej.: María García" />
                                     <Label Content="DNI (sin puntos)" />
@@ -115,21 +111,44 @@
                                 </StackPanel>
                                 <StackPanel Spacing="15" Grid.Column="1">
                                     <TextBlock Text="2. Documentación" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
-                                    <TextBlock Text="Adjuntá al menos un recibo de sueldo en PDF. Se conserva la referencia al archivo local; su contenido no se analiza." TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
+                                    <TextBlock Text="Adjuntá recibos de sueldo PDF con texto embebido. Al procesar cada recibo, su texto se envía a OpenAI para extraer los campos financieros. Los datos declarados se mantienen separados." TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
                                     <Button Content="Adjuntar recibos de sueldo (PDF)" Command="{Binding AddDocumentCommand}" HorizontalAlignment="Stretch" />
                                     <ItemsControl ItemsSource="{Binding Documents}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Border Background="{DynamicResource BorderPanelBackground}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-                                                    <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Spacing="10">
                                                         <StackPanel>
                                                             <TextBlock Text="{Binding Tipo}" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
                                                             <TextBlock Text="{Binding FileName}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
                                                         </StackPanel>
-                                                        <Button Grid.Column="1" Content="Quitar"
+                                                        <TextBlock Text="{Binding ProcessingStatusText, StringFormat='Procesamiento: {0}'}" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                                        <TextBlock Text="{Binding ProcessingMessage}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <Button Content="Procesar recibo"
+                                                                Command="{Binding $parent[Window].DataContext.ProcessDocumentCommand}"
+                                                                CommandParameter="{Binding}" />
+                                                        <Button Content="Quitar"
                                                                 Command="{Binding $parent[Window].DataContext.RemoveDocumentCommand}"
-                                                                CommandParameter="{Binding}" Margin="8,0,0,0" />
-                                                    </Grid>
+                                                                CommandParameter="{Binding}" />
+                                                        </StackPanel>
+                                                        <Border IsVisible="{Binding HasFinancialData}" BorderBrush="#2563EB" BorderThickness="2,0,0,0" Padding="12" Background="{DynamicResource CardBackground}" CornerRadius="4">
+                                                            <StackPanel Spacing="6">
+                                                                <TextBlock Text="Datos extraídos del recibo (solo lectura)" TextWrapping="Wrap" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
+                                                                <TextBlock Text="{Binding ReviewStatus, StringFormat='Revisión: {0}'}" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryForeground}" />
+                                                                <TextBlock Text="Empleador" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                                                <TextBlock Text="{Binding FinancialData.Employer, TargetNullValue='No obtenido'}" TextWrapping="Wrap" Foreground="{DynamicResource PageForeground}" />
+                                                                <TextBlock Text="Ingreso bruto (ARS)" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                                                <TextBlock Text="{Binding FinancialData.GrossIncome, StringFormat='{}{0:N2}', TargetNullValue='No obtenido'}" Foreground="{DynamicResource PageForeground}" />
+                                                                <TextBlock Text="Ingreso neto (ARS)" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                                                <TextBlock Text="{Binding FinancialData.NetIncome, StringFormat='{}{0:N2}', TargetNullValue='No obtenido'}" Foreground="{DynamicResource PageForeground}" />
+                                                                <TextBlock Text="Fecha del recibo" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                                                <TextBlock Text="{Binding FinancialData.ReceiptDate, StringFormat='{}{0:yyyy-MM-dd}', TargetNullValue='No obtenido'}" Foreground="{DynamicResource PageForeground}" />
+                                                                <TextBlock Text="Antigüedad laboral (meses)" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
+                                                                <TextBlock Text="{Binding FinancialData.EmploymentSeniorityMonths, TargetNullValue='No obtenido'}" Foreground="{DynamicResource PageForeground}" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </StackPanel>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
