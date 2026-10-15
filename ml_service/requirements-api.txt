@@ -1,0 +1,7 @@
+﻿# Conserva las versiones usadas por el baseline; no modifica su entorno de entrenamiento.
+-r requirements.lock.txt
+fastapi==0.115.12
+pydantic==2.11.4
+uvicorn==0.34.2
+httpx==0.28.1
+

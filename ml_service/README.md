@@ -1,6 +1,14 @@
 ﻿# Entrenamiento de riesgo crediticio
 
-Proyecto Python independiente para el baseline académico **Give Me Some Credit**. Estima morosidad de 90 días o más a 24 meses. No contiene API ni integración con .NET.
+Proyecto Python independiente para el baseline académico **Give Me Some Credit**. Estima morosidad de 90 días o más a 24 meses. Incluye entrenamiento y una API local de inferencia; la integración con .NET queda pendiente.
+
+La API se inicia desde esta carpeta con:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --workers 1 --no-access-log
+```
+
+Ver [api/README.md](api/README.md) para dependencias, contrato, ejemplos y errores. El entorno local ya tiene instaladas las dependencias de la API.
 
 ## Entorno
 
@@ -40,6 +48,8 @@ Configuración: `training/config.json`. La semilla es 42, la división es 70/15/
 - `training/train.py`: entrenamiento y artefactos reproducibles.
 - `training/report.py`: informe legible y gráfico por intervalos uniformes.
 - `tests/test_training.py`: pruebas de preparación, separación, Pipeline, serialización y resultados.
+- `api/`: esquemas Pydantic, carga del artefacto y endpoints FastAPI.
+- `tests/test_api.py`: pruebas del contrato y consistencia con el pipeline, incluyendo HTTP local con Uvicorn.
 - `data/raw/`: archivo descargado localmente y metadata de origen.
 - `artifacts/`: pipeline joblib y metadata del modelo.
 - `reports/`: métricas, calibración, gráficos, predicciones y particiones.
