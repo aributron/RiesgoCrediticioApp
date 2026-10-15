@@ -8,7 +8,7 @@ dotnet run --project Tests/DocumentProcessingChecks/DocumentProcessingChecks.csp
 
 La suite es una aplicación de consola sin paquetes de pruebas adicionales. Genera PDF sintéticos temporales con PdfPig y utiliza respuestas HTTP controladas: no consume créditos ni envía documentos a OpenAI.
 
-Comprueba lectura, documentos sin texto, archivos inválidos o ausentes, contrato JSON, campos nulos, errores HTTP, conexión, timeout, reprocesamiento, estados, separación de los datos declarados y conservación del resultado simulado.
+Comprueba lectura, documentos sin texto, archivos inválidos o ausentes, contrato JSON, campos nulos, errores HTTP, conexión, timeout, reprocesamiento, estados, separación de los datos declarados y conservación del resultado de evaluación. El servicio crediticio se sustituye exclusivamente en estas pruebas por una respuesta controlada.
 
 La antigüedad se solicita al modelo según las reglas del prompt; estas pruebas no certifican la exactitud de un modelo real.
 
@@ -20,7 +20,7 @@ El timeout se configura con `AiConfig:DocumentExtractionTimeoutSeconds` (1–300
 
 Ejecutar `dotnet run --project RiesgoFiscalApp.csproj`, adjuntar un recibo PDF con texto y pulsar **Procesar recibo**. Verificar los cinco campos contra el documento original. Los valores nulos deben verse como **No obtenido**, el resultado como **Pendiente de revisión**, y el ingreso declarado debe permanecer intacto.
 
-Repetir con un PDF sin texto y con un PDF inválido. No deben producir una llamada al modelo. Los datos extraídos son de solo lectura y la simulación crediticia sigue siendo independiente.
+Repetir con un PDF sin texto y con un PDF inválido. No deben producir una llamada al modelo de extracción. Los datos extraídos son de solo lectura y la evaluación crediticia sigue siendo independiente.
 
-No se implementa OCR, comparación con datos declarados, revisión aprobada, persistencia, ML ni interpretación crediticia.
+Estas pruebas no consumen la API Python ni implementan OCR, comparación con datos declarados, revisión aprobada, persistencia ni interpretación crediticia. La integración ML se verifica en Tests/CreditRiskChecks.
 

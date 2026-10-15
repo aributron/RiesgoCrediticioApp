@@ -12,6 +12,7 @@ namespace RiesgoFiscalApp;
 public partial class App : Application
 {
     private readonly HttpClient _httpClient = new() { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
+    private readonly HttpClient _creditRiskHttpClient = new() { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -26,9 +27,11 @@ public partial class App : Application
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
             var viewModel = new MainViewModel(new PdfTextExtractionService(),
-                new DocumentExtractionService(_httpClient, configuration));
+                new DocumentExtractionService(_httpClient, configuration),
+                new PythonCreditRiskService(_creditRiskHttpClient, configuration),
+                new RiskLevelService(configuration));
             desktop.MainWindow = new MainWindow { DataContext = viewModel };
-            desktop.Exit += (_, _) => _httpClient.Dispose();
+            desktop.Exit += (_, _) => { _httpClient.Dispose(); _creditRiskHttpClient.Dispose(); };
         }
 
         base.OnFrameworkInitializationCompleted();

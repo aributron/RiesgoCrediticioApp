@@ -29,7 +29,7 @@
                     <ToggleButton Classes="MenuButton" Content="Configuración" IsChecked="{Binding IsConfiguracionSection, Mode=TwoWay}" />
                 </StackPanel>
                 <Border Background="{DynamicResource PanelBackground}" CornerRadius="14" Padding="16">
-                    <TextBlock Text="Prototipo académico&#10;Simulación — sin modelo predictivo" TextWrapping="Wrap" Foreground="{DynamicResource SidebarPrimaryText}" />
+                    <TextBlock Text="Prototipo académico&#10;Evaluación mediante Machine Learning" TextWrapping="Wrap" Foreground="{DynamicResource SidebarPrimaryText}" />
                 </Border>
             </StackPanel>
         </Border>
@@ -54,7 +54,7 @@
                                 </Border>
                                 <Border Grid.Column="1" Background="{DynamicResource CardBackground}" CornerRadius="14" Padding="18">
                                     <StackPanel>
-                                        <TextBlock Text="Con simulación vigente" Foreground="{DynamicResource SecondaryForeground}" />
+                                        <TextBlock Text="Con evaluación vigente" Foreground="{DynamicResource SecondaryForeground}" />
                                         <TextBlock Text="{Binding EvaluatedCount}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
                                     </StackPanel>
                                 </Border>
@@ -99,14 +99,26 @@
                                     <TextBox Text="{Binding CurrentCustomer.Nombre, Mode=TwoWay}" Watermark="Ej.: María García" />
                                     <Label Content="DNI (sin puntos)" />
                                     <TextBox Text="{Binding CurrentCustomer.Dni, Mode=TwoWay}" Watermark="Ej.: 30123456" />
+                                    <Label Content="Edad (años)" />
+                                    <TextBox Text="{Binding AgeInput, Mode=TwoWay}" Watermark="Ej.: 35" />
                                     <Label Content="Situación laboral" />
                                     <TextBox Text="{Binding CurrentCustomer.SituacionLaboral, Mode=OneWay}" IsReadOnly="True" />
-                                    <Label Content="Ingreso mensual declarado (ARS)" />
+                                    <Label><TextBlock Text="Ingreso bruto mensual declarado (ARS)" TextWrapping="Wrap" /></Label>
                                     <TextBox Text="{Binding IncomeInput, Mode=TwoWay}" Watermark="Ej.: 850000,50" />
+                                    <Label><TextBlock Text="Compromisos y gastos mensuales declarados (ARS)" TextWrapping="Wrap" /></Label>
+                                    <TextBox Text="{Binding CommitmentsInput, Mode=TwoWay}" Watermark="Ej.: 420000" />
+                                    <TextBlock Text="Incluye pagos de deudas, obligaciones alimentarias y gastos habituales de vida. No incluyas la cuota hipotética del crédito solicitado." TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SecondaryForeground}" Margin="0,0,0,12" />
+                                    <TextBlock Text="Atrasos históricos declarados — últimos 24 meses" TextWrapping="Wrap" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                    <Label><TextBlock Text="Cantidad de atrasos de 30–59 días (últimos 24 meses)" TextWrapping="Wrap" /></Label>
+                                    <TextBox Text="{Binding Late30Input, Mode=TwoWay}" Watermark="Entero entre 0 y 24" />
+                                    <Label><TextBlock Text="Cantidad de atrasos de 60–89 días (últimos 24 meses)" TextWrapping="Wrap" /></Label>
+                                    <TextBox Text="{Binding Late60Input, Mode=TwoWay}" Watermark="Entero entre 0 y 24" />
+                                    <TextBlock Text="Datos declarados para esta implementación académica. Si desconocés un dato, dejalo pendiente; no ingreses cero. En un entorno real, el historial debería provenir de fuentes externas de información crediticia." TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SecondaryForeground}" Margin="0,0,0,12" />
                                     <Label Content="Monto solicitado (ARS)" />
                                     <TextBox Text="{Binding AmountInput, Mode=TwoWay}" Watermark="Ej.: 1500000" />
                                     <Label Content="Plazo (meses)" />
                                     <TextBox Text="{Binding TermInput, Mode=TwoWay}" Watermark="Ej.: 12" />
+                                    <TextBlock Text="Monto y plazo se registran en la solicitud, pero no intervienen en el modelo inicial." TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SubtleForeground}" Margin="0,0,0,10" />
                                     <TextBlock Text="Importes sin separador de miles; usá coma para los decimales." TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SubtleForeground}" />
                                 </StackPanel>
                                 <StackPanel Spacing="15" Grid.Column="1">
@@ -154,17 +166,21 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <Separator />
-                                    <TextBlock Text="3. Resultado simulado" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
+                                    <TextBlock Text="3. Evaluación crediticia" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PageForeground}" />
                                     <Border Background="{DynamicResource BorderPanelBackground}" Padding="15" CornerRadius="8">
                                         <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="{DynamicResource PageForeground}" />
                                     </Border>
-                                    <Button Classes="Primary" Content="Simular evaluación" Command="{Binding EvaluateCommand}" HorizontalAlignment="Stretch" />
+                                    <Button Classes="Primary" Content="Evaluar riesgo" Command="{Binding EvaluateCommand}" HorizontalAlignment="Stretch" />
+                                    <TextBlock Text="{Binding CurrentApplication.Estado}" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
+                                    <TextBlock Text="{Binding CurrentApplication.EvaluationMessage}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
                                     <Border IsVisible="{Binding HasAssessment}" Background="{DynamicResource BorderPanelBackground}" CornerRadius="10" Padding="18">
                                         <StackPanel Spacing="10">
-                                            <TextBlock Text="Simulación — sin modelo predictivo" FontWeight="Bold" TextWrapping="Wrap" Foreground="{DynamicResource PageForeground}" />
-                                            <TextBlock Text="Probabilidad de incumplimiento (simulada)" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
-                                            <TextBlock Text="{Binding AssessmentResult.ProbabilidadIncumplimiento, StringFormat='{}{0:P0}'}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
+                                            <TextBlock Text="Probabilidad estimada de morosidad grave a 24 meses" FontWeight="Bold" TextWrapping="Wrap" Foreground="{DynamicResource PageForeground}" />
+                                            <TextBlock Text="{Binding AssessmentResult.ProbabilidadMorosidadGrave, StringFormat='{}{0:P2}'}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource PageForeground}" />
                                             <TextBlock Text="{Binding AssessmentResult.NivelRiesgo, StringFormat='Nivel de riesgo: {0}'}" FontSize="18" TextWrapping="Wrap" Foreground="{DynamicResource PageForeground}" />
+                                            <TextBlock Text="{Binding AssessmentResult.HorizonteMeses, StringFormat='Horizonte de evaluación: {0} meses'}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
+                                            <TextBlock Text="{Binding AssessmentResult.EventoEvaluado, StringFormat='Evento evaluado: {0}'}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
+                                            <TextBlock Text="{Binding AssessmentResult.VersionModelo, StringFormat='Versión del modelo: {0}'}" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
                                             <TextBlock Text="{Binding AssessmentResult.Descripcion}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryForeground}" />
                                         </StackPanel>
                                     </Border>

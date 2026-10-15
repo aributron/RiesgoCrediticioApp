@@ -133,7 +133,7 @@ try
     await Fails<OperationCanceledException>(() => slowService.ExtractAsync("texto del recibo", cancelled.Token), "Cancelación externa");
 
     var fakeExtraction = new FakeExtraction(financial);
-    var vm = new MainViewModel(reader, fakeExtraction);
+    var vm = new MainViewModel(reader, fakeExtraction, new TestRiskService(), new RiskLevelService());
     var document = new Document { CreditApplicationId = vm.CurrentApplication.Id, FilePath = pdfPath, FileName = "receipt.pdf" };
     vm.Documents.Add(document);
     Check(document.ProcessingStatus == DocumentProcessingStatus.Pending && !document.HasFinancialData, "Estado inicial");
@@ -142,14 +142,15 @@ try
     vm.IncomeInput = "850000,50";
     vm.AmountInput = "1500000";
     vm.TermInput = "12";
-    Check(vm.EvaluateCommand.CanExecute(null), "Simulación disponible antes de extracción");
-    vm.EvaluateCommand.Execute(null);
-    var simulation = vm.AssessmentResult;
+    vm.AgeInput = "35"; vm.CommitmentsInput = "420000"; vm.Late30Input = "1"; vm.Late60Input = "0";
+    Check(vm.EvaluateCommand.CanExecute(null), "Evaluación disponible antes de extracción");
+    await vm.EvaluateRiskAsync();
+    var evaluation = vm.AssessmentResult;
     await vm.ProcessDocumentAsync(document);
     Check(document.ProcessingStatus == DocumentProcessingStatus.Processed && document.HasFinancialData, "Extracción por documento");
     Check(document.ReviewStatus == "Pendiente de revisión", "Estado revisión inicial");
-    Check(vm.CurrentCustomer.IngresoMensualDeclarado == 850000.50m && vm.IncomeInput == "850000,50", "No sobrescribe datos declarados");
-    Check(ReferenceEquals(simulation, vm.AssessmentResult) && vm.AssessmentResult!.ProbabilidadIncumplimiento == 0.15, "Simulación conservada");
+    Check(vm.CurrentCustomer.IngresoBrutoMensualDeclarado == 850000.50m && vm.IncomeInput == "850000,50", "No sobrescribe datos declarados");
+    Check(ReferenceEquals(evaluation, vm.AssessmentResult) && vm.AssessmentResult!.ProbabilidadMorosidadGrave == 0.2, "Evaluación conservada");
     fakeExtraction.Fail = true;
     await vm.ProcessDocumentAsync(document);
     Check(document.ProcessingStatus == DocumentProcessingStatus.Error && document.FinancialData == null &&
@@ -174,7 +175,7 @@ try
     Check(foreign.ProcessingStatus == DocumentProcessingStatus.Pending, "No procesa documento ajeno");
 
     var waitingPdf = new WaitingPdf();
-    var busyVm = new MainViewModel(waitingPdf, new FakeExtraction(financial));
+    var busyVm = new MainViewModel(waitingPdf, new FakeExtraction(financial), new TestRiskService(), new RiskLevelService());
     var busyDoc = new Document { CreditApplicationId = busyVm.CurrentApplication.Id, FilePath = pdfPath };
     busyVm.Documents.Add(busyDoc);
     var processing = busyVm.ProcessDocumentAsync(busyDoc);
@@ -221,4 +222,15 @@ sealed class WaitingPdf : IPdfTextExtractionService
         return Completion.Task;
     }
 }
+
+sealed class TestRiskService : ICreditRiskService
+{
+    public Task<CreditRiskResponse> PredictAsync(CreditRiskRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new CreditRiskResponse
+        {
+            DefaultProbability = 0.2, ModelVersion = "document-check-only",
+            PredictionHorizonMonths = 24, TargetEvent = CreditRiskResponse.ExpectedTargetEvent
+        });
+}
+
 

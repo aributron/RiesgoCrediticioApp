@@ -16,7 +16,8 @@ namespace RiesgoFiscalApp.ViewModels;
 
 public class MainViewModel : INotifyPropertyChanged
 {
-    private readonly SimulatedCreditRiskService _riskService = new();
+    private readonly ICreditRiskService _riskService;
+    private readonly RiskLevelService _riskLevels;
     private readonly IPdfTextExtractionService _pdfTextService;
     private readonly IDocumentExtractionService _documentExtractionService;
     private CreditApplication _currentApplication = new();
@@ -27,12 +28,21 @@ public class MainViewModel : INotifyPropertyChanged
     private string _termInput = string.Empty;
     private string _statusMessage = string.Empty;
     private bool _isBusy;
+    private string _ageInput = string.Empty;
+    private string _commitmentsInput = string.Empty;
+    private string _late30Input = string.Empty;
+    private string _late60Input = string.Empty;
+    private long _inputRevision;
+    private CancellationTokenSource? _evaluationCts;
 
-    public MainViewModel(IPdfTextExtractionService pdfTextService, IDocumentExtractionService documentExtractionService)
+    public MainViewModel(IPdfTextExtractionService pdfTextService, IDocumentExtractionService documentExtractionService,
+        ICreditRiskService riskService, RiskLevelService riskLevels)
     {
+        _riskService = riskService;
+        _riskLevels = riskLevels;
         _pdfTextService = pdfTextService;
         _documentExtractionService = documentExtractionService;
-        EvaluateCommand = new RelayCommand(_ => Evaluate(), _ => !IsBusy && GetValidationErrors().Count == 0);
+        EvaluateCommand = new RelayCommand(async _ => await EvaluateRiskAsync(), _ => !IsBusy && GetValidationErrors().Count == 0);
         AddDocumentCommand = new RelayCommand(async _ => await PickAndAddDocumentsAsync(), _ => !IsBusy);
         RemoveDocumentCommand = new RelayCommand(
             item => { if (!IsBusy && item is Document document) Documents.Remove(document); }, _ => !IsBusy);
@@ -60,15 +70,14 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand NewApplicationCommand { get; }
     public RelayCommand ProcessDocumentCommand { get; }
 
-    // Texto para que valores vacíos o inválidos también invaliden la simulación.
+    // Texto para preservar campos vacíos/incorrectos sin interpretarlos como cero.
     public string IncomeInput
     {
         get => _incomeInput;
         set
         {
             _incomeInput = value;
-            TryAmount(value, out var income);
-            CurrentCustomer.IngresoMensualDeclarado = income;
+            CurrentCustomer.IngresoBrutoMensualDeclarado = TryAmount(value, out var income) ? income : null;
             OnPropertyChanged();
             InputsChanged();
         }
@@ -84,6 +93,31 @@ public class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             InputsChanged();
         }
+    }
+    public string AgeInput
+    {
+        get => _ageInput;
+        set { _ageInput = value; CurrentCustomer.Edad = ParseWholeNumber(value); OnPropertyChanged(); }
+    }
+    public string CommitmentsInput
+    {
+        get => _commitmentsInput;
+        set
+        {
+            _commitmentsInput = value;
+            CurrentCustomer.CompromisosMensuales = TryNonnegativeAmount(value, out var amount) ? amount : null;
+            OnPropertyChanged();
+        }
+    }
+    public string Late30Input
+    {
+        get => _late30Input;
+        set { _late30Input = value; CurrentCustomer.Atrasos30a59Ultimos24Meses = ParseWholeNumber(value); OnPropertyChanged(); }
+    }
+    public string Late60Input
+    {
+        get => _late60Input;
+        set { _late60Input = value; CurrentCustomer.Atrasos60a89Ultimos24Meses = ParseWholeNumber(value); OnPropertyChanged(); }
     }
     public string TermInput
     {
@@ -150,6 +184,13 @@ public class MainViewModel : INotifyPropertyChanged
         decimal.TryParse(input, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite |
             NumberStyles.AllowTrailingWhite, CultureInfo.GetCultureInfo("es-AR"), out value) && value > 0;
 
+    private static bool TryNonnegativeAmount(string input, out decimal value) =>
+        decimal.TryParse(input, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite |
+            NumberStyles.AllowTrailingWhite, CultureInfo.GetCultureInfo("es-AR"), out value) && value >= 0;
+
+    private static int? ParseWholeNumber(string input) =>
+        int.TryParse(input.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : null;
+
     private List<string> GetValidationErrors()
     {
         var errors = new List<string>();
@@ -157,7 +198,8 @@ public class MainViewModel : INotifyPropertyChanged
         var dni = CurrentCustomer.Dni.Trim();
         if (dni.Length < 7 || dni.Length > 8 || !dni.All(c => c >= '0' && c <= '9'))
             errors.Add("DNI de 7 u 8 dígitos, sin puntos");
-        if (!TryAmount(IncomeInput, out _)) errors.Add("ingreso mensual positivo");
+        CreditRiskInputBuilder.TryBuild(CurrentCustomer, out _, out var riskErrors);
+        errors.AddRange(riskErrors);
         if (!TryAmount(AmountInput, out _)) errors.Add("monto solicitado positivo");
         if (!int.TryParse(TermInput, NumberStyles.None, CultureInfo.InvariantCulture, out var term) || term <= 0)
             errors.Add("plazo entero positivo en meses");
@@ -172,6 +214,11 @@ public class MainViewModel : INotifyPropertyChanged
     {
         CurrentCustomer.PropertyChanged += OnCustomerChanged;
         Documents.CollectionChanged += OnDocumentsChanged;
+        CurrentApplication.PropertyChanged += OnApplicationChanged;
+    }
+    private void OnApplicationChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CreditApplication.MontoSolicitado) or nameof(CreditApplication.PlazoMeses)) InputsChanged();
     }
     private void OnCustomerChanged(object? sender, PropertyChangedEventArgs e) => InputsChanged();
     private void OnDocumentsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
@@ -179,11 +226,20 @@ public class MainViewModel : INotifyPropertyChanged
 
     private void InputsChanged()
     {
+        _inputRevision++;
+        var wasEvaluating = _evaluationCts != null;
+        _evaluationCts?.Cancel();
         CurrentApplication.Resultado = null;
+        CurrentApplication.EvaluationStatus = CreditEvaluationStatus.Pending;
+        CurrentApplication.EvaluationMessage = wasEvaluating ? "Los datos cambiaron. Volvé a evaluar la solicitud actualizada." : string.Empty;
+        NotifyEvaluationChanged();
+        RefreshValidation();
+    }
+    private void NotifyEvaluationChanged()
+    {
         OnPropertyChanged(nameof(AssessmentResult));
         OnPropertyChanged(nameof(HasAssessment));
         OnPropertyChanged(nameof(EvaluatedCount));
-        RefreshValidation();
     }
     private void RefreshCommands()
     {
@@ -197,12 +253,12 @@ public class MainViewModel : INotifyPropertyChanged
     {
         var errors = GetValidationErrors();
         StatusMessage = errors.Count == 0
-            ? "Solicitud lista para simular. La extracción documental se procesa por separado."
+            ? "Solicitud lista para evaluar con el modelo ML. La extracción documental se procesa por separado."
             : "Completar: " + string.Join("; ", errors) + ".";
         RefreshCommands();
     }
 
-    private void Evaluate()
+    public async Task EvaluateRiskAsync()
     {
         if (IsBusy) return;
         if (GetValidationErrors().Count != 0)
@@ -210,16 +266,51 @@ public class MainViewModel : INotifyPropertyChanged
             InputsChanged();
             return;
         }
-        TryAmount(IncomeInput, out var income);
-        TryAmount(AmountInput, out var amount);
-        CurrentCustomer.IngresoMensualDeclarado = income;
-        CurrentApplication.MontoSolicitado = amount;
-        CurrentApplication.PlazoMeses = int.Parse(TermInput, CultureInfo.InvariantCulture);
-        CurrentApplication.Resultado = _riskService.Evaluate();
-        OnPropertyChanged(nameof(AssessmentResult));
-        OnPropertyChanged(nameof(HasAssessment));
-        OnPropertyChanged(nameof(EvaluatedCount));
-        StatusMessage = "Simulación disponible para revisión del analista.";
+        if (!CreditRiskInputBuilder.TryBuild(CurrentCustomer, out var input, out _)) return;
+        var application = CurrentApplication;
+        var revision = _inputRevision;
+        using var cancellation = new CancellationTokenSource();
+        _evaluationCts = cancellation;
+        IsBusy = true;
+        application.Resultado = null;
+        application.EvaluationStatus = CreditEvaluationStatus.Evaluating;
+        application.EvaluationMessage = "Consultando el modelo de Machine Learning…";
+        NotifyEvaluationChanged();
+        bool IsCurrent() => application.Id == CurrentApplication.Id && revision == _inputRevision;
+        void Fail(string message)
+        {
+            if (!IsCurrent()) return;
+            application.Resultado = null;
+            application.EvaluationStatus = CreditEvaluationStatus.Unavailable;
+            application.EvaluationMessage = message;
+            NotifyEvaluationChanged();
+        }
+        try
+        {
+            var response = await _riskService.PredictAsync(input!, cancellation.Token);
+            if (!IsCurrent() || cancellation.IsCancellationRequested) return;
+            response.ValidateContract();
+            application.Resultado = new RiskAssessment
+            {
+                ProbabilidadMorosidadGrave = response.DefaultProbability,
+                NivelRiesgo = _riskLevels.Classify(response.DefaultProbability),
+                VersionModelo = response.ModelVersion,
+                HorizonteMeses = response.PredictionHorizonMonths,
+                EventoObjetivo = response.TargetEvent
+            };
+            application.EvaluationStatus = CreditEvaluationStatus.Available;
+            application.EvaluationMessage = "Evaluación disponible para revisión del analista.";
+            NotifyEvaluationChanged();
+        }
+        catch (CreditRiskServiceException ex) { Fail(ex.Message); }
+        catch (InvalidDataException ex) { Fail(ex.Message); }
+        catch (OperationCanceledException) { Fail("La evaluación fue cancelada. Podés reintentar."); }
+        catch (Exception) { Fail("No se pudo completar la evaluación. Revisá el servicio Python y reintentá."); }
+        finally
+        {
+            _evaluationCts = null;
+            IsBusy = false;
+        }
     }
 
     private void StartNewApplication()
@@ -227,13 +318,16 @@ public class MainViewModel : INotifyPropertyChanged
         if (IsBusy) return;
         CurrentCustomer.PropertyChanged -= OnCustomerChanged;
         Documents.CollectionChanged -= OnDocumentsChanged;
+        CurrentApplication.PropertyChanged -= OnApplicationChanged;
         _currentApplication = new CreditApplication();
         _incomeInput = _amountInput = _termInput = string.Empty;
+        _ageInput = _commitmentsInput = _late30Input = _late60Input = string.Empty;
+        _inputRevision++;
         AttachCurrentApplication();
         Applications.Add(CurrentApplication);
         foreach (var name in new[] { nameof(CurrentApplication), nameof(CurrentCustomer), nameof(Documents),
             nameof(IncomeInput), nameof(AmountInput), nameof(TermInput), nameof(ApplicationCount),
-            nameof(AssessmentResult), nameof(HasAssessment) })
+            nameof(AssessmentResult), nameof(HasAssessment), nameof(AgeInput), nameof(CommitmentsInput), nameof(Late30Input), nameof(Late60Input) })
             OnPropertyChanged(name);
         RefreshValidation();
         SelectedSection = "Evaluación";

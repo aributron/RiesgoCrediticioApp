@@ -1,6 +1,6 @@
 ﻿# Entrenamiento de riesgo crediticio
 
-Proyecto Python independiente para el baseline académico **Give Me Some Credit**. Estima morosidad de 90 días o más a 24 meses. Incluye entrenamiento y una API local de inferencia; la integración con .NET queda pendiente.
+Proyecto Python independiente para el baseline académico **Give Me Some Credit**. Estima morosidad de 90 días o más a 24 meses. Incluye entrenamiento y una API local de inferencia consumida por la aplicación .NET.
 
 La API se inicia desde esta carpeta con:
 
@@ -73,9 +73,9 @@ Ver [reports/RESULTS.md](reports/RESULTS.md) para cifras, exclusiones, calibraci
 
 Las métricas se obtienen sobre datos históricos externos y una población filtrada; no validan probabilidades para Argentina ni exclusivamente para empleados en relación de dependencia. La calibración presenta errores locales especialmente en la cola alta, aunque su promedio se acerque a la prevalencia.
 
-Los campos de historial de mora se usarán como declarados únicamente en la futura implementación académica. En un entorno real deberían provenir de fuentes externas de información crediticia. Un dato desconocido no equivale a cero atrasos.
+Los campos de historial de mora se utilizan como declarados únicamente en la implementación académica. La aplicación y la API admiten cantidades enteras entre 0 y 24. En un entorno real deberían provenir de fuentes externas de información crediticia. Un dato desconocido no equivale a cero atrasos.
 
-Las bandas Bajo/Medio/Alto se implementarán posteriormente como reglas configurables de la solución; no son decisiones automáticas. La aplicación C# conserva su comportamiento actual hasta autorizar la integración.
+Las bandas Bajo/Medio/Alto se calculan en C# mediante umbrales centralizados y configurables; no son decisiones automáticas. Ver [comprobaciones e integración C#](../Tests/CreditRiskChecks/README.md). El pipeline y los artefactos del baseline no se modificaron al integrar la API.
 
 El artefacto joblib fue generado localmente; debe cargarse con las versiones registradas y desde una fuente confiable. Los coeficientes no son explicaciones causales.
 

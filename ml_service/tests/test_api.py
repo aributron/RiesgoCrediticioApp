@@ -88,8 +88,8 @@ class ApiTests(unittest.TestCase):
             {**EXAMPLE, "latePayments30To59DaysLast24Months": -1},
             {**EXAMPLE, "latePayments60To89DaysLast24Months": 1.5},
             {**EXAMPLE, "latePayments60To89DaysLast24Months": False},
-            {**EXAMPLE, "latePayments30To59DaysLast24Months": 96},
-            {**EXAMPLE, "latePayments60To89DaysLast24Months": 98},
+            {**EXAMPLE, "latePayments30To59DaysLast24Months": 25},
+            {**EXAMPLE, "latePayments60To89DaysLast24Months": 25},
             {**EXAMPLE, "unexpectedField": "private-marker"},
             {**EXAMPLE, "latePayments30To59DaysLast24Months": 2147483648},
         ]
@@ -108,6 +108,12 @@ class ApiTests(unittest.TestCase):
                 payload = EXAMPLE.copy()
                 del payload[field]
                 self.assertEqual(self.client.post("/v1/predict", json=payload).status_code, 422)
+
+    def test_late_count_boundaries(self):
+        for count in (0, 24):
+            payload = {**EXAMPLE, "latePayments30To59DaysLast24Months": count,
+                       "latePayments60To89DaysLast24Months": count}
+            self.assertEqual(self.client.post("/v1/predict", json=payload).status_code, 200)
 
     def test_nonfinite_inputs(self):
         for value in (float("nan"), float("inf"), -float("inf")):

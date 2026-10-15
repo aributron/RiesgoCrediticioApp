@@ -73,10 +73,10 @@ Los cuatro campos son obligatorios. Se rechazan campos adicionales, null, boolea
 |---|---|---|
 | ageYears | age | Entero, 18–120 años |
 | debtRatio | DebtRatio | Número finito no negativo; fracción, no porcentaje |
-| latePayments30To59DaysLast24Months | NumberOfTime30-59DaysPastDueNotWorse | Entero no negativo |
-| latePayments60To89DaysLast24Months | NumberOfTime60-89DaysPastDueNotWorse | Entero no negativo |
+| latePayments30To59DaysLast24Months | NumberOfTime30-59DaysPastDueNotWorse | Entero entre 0 y 24 |
+| latePayments60To89DaysLast24Months | NumberOfTime60-89DaysPastDueNotWorse | Entero entre 0 y 24 |
 
-Se rechazan códigos 96/98 porque fueron excluidos del entrenamiento. Los conteos se limitan al rango de un entero de 32 bits. Un campo desconocido no debe enviarse como cero.
+Los conteos representan cantidades reales en la ventana de 24 meses. Un campo desconocido no debe enviarse como cero.
 
 `debtRatio` puede superar 1 y representa compromisos mensuales —deudas, obligaciones alimentarias y gastos de vida— / ingreso bruto mensual. La API recibe el ratio ya calculado; no recibe ingreso nominal, identidad ni documentos.
 
@@ -132,5 +132,5 @@ La prueba HTTP inicia un Uvicorn temporal en loopback con puerto libre y lo deti
 
 Servicio local para la PoC, sin autenticación ni despliegue externo. Mantiene las limitaciones estadísticas del baseline, incluida la calibración deficiente de probabilidades altas; exponerlo por HTTP no modifica esas propiedades.
 
-La validación de rangos no garantiza que el caso pertenezca a la población del entrenamiento. No hay almacenamiento de solicitudes, interpretación con IA ni integración C#.
+La validación de rangos no garantiza que el caso pertenezca a la población del entrenamiento. No hay almacenamiento de solicitudes ni interpretación con IA. La aplicación C# consume esta API y calcula el nivel de riesgo localmente; ver [integración C#](../../Tests/CreditRiskChecks/README.md).
 
