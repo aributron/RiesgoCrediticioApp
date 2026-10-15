@@ -1,0 +1,20 @@
+﻿{
+  "model_version": "gmsc-logreg-v1",
+  "random_state": 42,
+  "train_fraction": 0.7,
+  "validation_fraction": 0.15,
+  "test_fraction": 0.15,
+  "candidate_C": [
+    0.1,
+    1,
+    10
+  ],
+  "selection_metric": "log_loss",
+  "max_iter": 2000,
+  "calibration_bins": 10,
+  "diagnostic_thresholds": [
+    0.1,
+    0.25,
+    0.5
+  ]
+}

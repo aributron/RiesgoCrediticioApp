@@ -1,0 +1,146 @@
+{
+  "model_version": "gmsc-logreg-v1",
+  "created_at_utc": "2026-10-15T00:54:37.210587+00:00",
+  "prediction_description": "Probabilidad estimada de morosidad grave a 24 meses",
+  "target": "SeriousDlqin2yrs",
+  "positive_class": 1,
+  "prediction_horizon_months": 24,
+  "target_event": "delinquency_90_days_or_more",
+  "dataset": {
+    "name": "Give Me Some Credit",
+    "openml_id": 45577,
+    "openml_version": 1,
+    "original_source": "https://www.kaggle.com/competitions/GiveMeSomeCredit",
+    "mirror_metadata": "https://www.openml.org/api/v1/json/data/45577",
+    "local_filename": "Give-Me-Some-Credit.arff",
+    "sha256": "1d1a66d10042a3ff8ed4f7712f52c2701ccef1924509cc11420188f512af327a"
+  },
+  "feature_names_in_order": [
+    "age",
+    "DebtRatio",
+    "NumberOfTime30-59DaysPastDueNotWorse",
+    "NumberOfTime60-89DaysPastDueNotWorse"
+  ],
+  "feature_semantics": {
+    "age": "Edad en años enteros, mínimo 18",
+    "DebtRatio": "Compromisos mensuales (deudas, obligaciones alimentarias y gastos de vida) / ingreso bruto mensual; fracción, no porcentaje",
+    "NumberOfTime30-59DaysPastDueNotWorse": "Cantidad de atrasos de 30–59 días, sin empeorar, durante los últimos 24 meses",
+    "NumberOfTime60-89DaysPastDueNotWorse": "Cantidad de atrasos de 60–89 días, sin empeorar, durante los últimos 24 meses"
+  },
+  "not_used_as_predictors": [
+    "MonthlyIncome",
+    "requestedAmount",
+    "termMonths",
+    "employmentSeniorityMonths"
+  ],
+  "preprocessing": [
+    "Selección fija de población elegible antes de partir; detalles en dataset_analysis.json",
+    "log1p(DebtRatio); las otras tres variables se conservan",
+    "SimpleImputer(median), ajustado exclusivamente con entrenamiento",
+    "StandardScaler, ajustado exclusivamente con entrenamiento",
+    "LogisticRegression regularizada L2; sin sobremuestreo ni class_weight"
+  ],
+  "selection": {
+    "metric": "validation_log_loss",
+    "candidates": [
+      {
+        "C": 0.1,
+        "validation_log_loss": 0.21628550355600046
+      },
+      {
+        "C": 1,
+        "validation_log_loss": 0.21628654012750706
+      },
+      {
+        "C": 10,
+        "validation_log_loss": 0.21628664818894616
+      }
+    ],
+    "selected_C": 0.1,
+    "fitted_population": "train only; no refit on validation or test",
+    "test_used_for_selection": false
+  },
+  "config": {
+    "model_version": "gmsc-logreg-v1",
+    "random_state": 42,
+    "train_fraction": 0.7,
+    "validation_fraction": 0.15,
+    "test_fraction": 0.15,
+    "candidate_C": [
+      0.1,
+      1,
+      10
+    ],
+    "selection_metric": "log_loss",
+    "max_iter": 2000,
+    "calibration_bins": 10,
+    "diagnostic_thresholds": [
+      0.1,
+      0.25,
+      0.5
+    ]
+  },
+  "split_counts": {
+    "train": {
+      "records": 82888,
+      "positive_records": 5746,
+      "positive_rate": 0.06932245922208281
+    },
+    "validation": {
+      "records": 17762,
+      "positive_records": 1231,
+      "positive_rate": 0.06930525841684496
+    },
+    "test": {
+      "records": 17762,
+      "positive_records": 1231,
+      "positive_rate": 0.06930525841684496
+    }
+  },
+  "training_positive_rate": 0.06932245922208281,
+  "calibration": "Diagnóstico de baseline sin recalibración. Validación se utiliza para seleccionar C; prueba es holdout.",
+  "python_version": "3.12.10",
+  "dependencies": {
+    "contourpy": "1.4.0",
+    "cycler": "0.12.1",
+    "fonttools": "4.67.0",
+    "joblib": "1.4.2",
+    "kiwisolver": "1.5.1",
+    "matplotlib": "3.10.1",
+    "numpy": "2.2.6",
+    "packaging": "26.3",
+    "pandas": "2.2.3",
+    "pillow": "12.3.0",
+    "pyparsing": "3.3.3",
+    "python-dateutil": "2.9.0.post0",
+    "pytz": "2026.5",
+    "scikit-learn": "1.6.1",
+    "scipy": "1.15.3",
+    "six": "1.17.0",
+    "threadpoolctl": "3.7.0",
+    "tzdata": "2026.5"
+  },
+  "source_files_sha256": {
+    "credit_risk/__init__.py": "f01a374e9c81e3db89b3a42940c4d6a5447684986a1296e42bf13f196eed6295",
+    "credit_risk/data.py": "9b33f0619bcec9097576c13d688faebabc6d8d0d9fe597b10992fd0d7d6df02c",
+    "credit_risk/evaluation.py": "92cac432456947ad1154d68640e6724452835ff8ffe62f28fbfdf59c39cc84be",
+    "credit_risk/model.py": "63d7f0c7d62d0ba048c5f25b97ab9fff8b67eb0bdf0964d71ddb2ba3612e894e",
+    "training/__init__.py": "f01a374e9c81e3db89b3a42940c4d6a5447684986a1296e42bf13f196eed6295",
+    "training/download_dataset.py": "f4494bedbb68280298dd58e498ab4df2458b7aa2a80013c2787c4d8871726335",
+    "training/train.py": "a809d7710d963613eea4511939a6cbb2d707a08cecf4cbcabfd50b1aa58bf01c",
+    "training/config.json": "235cf0e094e00410b077c1653ad63eb9e3b835f5bf08aaef396bd5c32eafd1bd",
+    "requirements.txt": "47722f877101d3512f6cb25afe979345d3ad033619d142ebc005b2998105c7e4"
+  },
+  "artifact_sha256": "5688cd003f7c14c20b8f9c5b20f01be52a9335d9bf6f517b728a8094ef49fbf4",
+  "serialization_roundtrip_identical": true,
+  "limitations": [
+    "Dataset histórico externo; no valida probabilidades para Argentina actual.",
+    "No permite seleccionar exclusivamente empleados en relación de dependencia.",
+    "La población se restringe a ingreso conocido positivo y excluye registros anómalos/duplicados; puede producir sesgo de selección.",
+    "Códigos de mora 96/98 excluidos como extremos recurrentes, sin afirmar una semántica de faltante confirmada.",
+    "Sin fecha de observación ni ID de persona para separación temporal o por solicitante.",
+    "Historial de mora declarado solo para la futura demostración académica; en un entorno real requiere fuentes crediticias externas.",
+    "Monto, plazo y antigüedad no influyen en este baseline.",
+    "Las bandas de riesgo serán reglas configurables de C#, no decisiones automáticas."
+  ]
+}

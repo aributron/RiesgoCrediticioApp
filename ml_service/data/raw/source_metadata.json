@@ -1,0 +1,23 @@
+{
+  "data_set_description": {
+    "id": "45577",
+    "name": "Give-Me-Some-Credit",
+    "version": "1",
+    "description": "Improve on the state of the art in credit scoring by predicting the probability that somebody will experience financial distress in the next two years.\n\nyeah\n\n## Description\n\nBanks play a crucial role in market economies. They decide who can get finance and on what terms and can make or break investment decisions. For markets and society to function, individuals and companies need access to credit. \n\nCredit scoring algorithms, which make a guess at the probability of default, are the method banks use to determine whether or not a loan should be granted. This competition requires participants to improve on the state of the art in credit scoring, by predicting the probability that somebody will experience financial distress in the next two years.\n\nThe goal of this competition is to build a model that borrowers can use to help make the best financial decisions.\n\nHistorical data are provided on 250,000 borrowers and the prize pool is $5,000 ($3,000 for first, $1,500 for second and $500 for third).\n\n## Features\n\n| Variable Name                        | Description                                                                                                                                              | Type       |\n|--------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|------------|\n| SeriousDlqin2yrs                     | Person experienced 90 days past due delinquency or worse                                                                                                 | Y/N        |\n| RevolvingUtilizationOfUnsecuredLines | Total balance on credit cards and personal lines of credit except real estate and no installment debt like car loans divided by the sum of credit limits | percentage |\n| age                                  | Age of borrower in years                                                                                                                                 | integer    |\n| NumberOfTime30-59DaysPastDueNotWorse | Number of times borrower has been 30-59 days past due but no worse in the last 2 years.                                                                  | integer    |\n| DebtRatio                            | Monthly debt payments, alimony,living costs divided by monthy gross income                                                                               | percentage |\n| MonthlyIncome                        | Monthly income                                                                                                                                           | real       |\n| NumberOfOpenCreditLinesAndLoans      | Number of Open loans (installment like car loan or mortgage) and Lines of credit (e.g. credit cards)                                                     | integer    |\n| NumberOfTimes90DaysLate              | Number of times borrower has been 90 days or more past due.                                                                                              | integer    |\n| NumberRealEstateLoansOrLines         | Number of mortgage and real estate loans including home equity lines of credit                                                                           | integer    |\n| NumberOfTime60-89DaysPastDueNotWorse | Number of times borrower has been 60-89 days past due but no worse in the last 2 years.                                                                  | integer    |\n| NumberOfDependents                   | Number of dependents in family excluding themselves (spouse, children etc.)                                                                              | integer    |\n\n**Note:** This is the training part of the Kaggle competition going by the dataset name hosted [here](https://www.kaggle.com/competitions/GiveMeSomeCredit/overview).",
+    "description_version": "6",
+    "format": "arff",
+    "upload_date": "2023-06-20T21:38:46",
+    "language": "English",
+    "licence": "Public",
+    "url": "https://openml.org/data/v1/download/22116561/Give-Me-Some-Credit.arff",
+    "parquet_url": "https://data.openml.org/datasets/0004/45577/dataset_45577.pq",
+    "file_id": "22116561",
+    "default_target_attribute": "SeriousDlqin2yrs",
+    "citation": "https://www.kaggle.com/c/GiveMeSomeCredit/",
+    "visibility": "public",
+    "original_data_url": "https://www.kaggle.com/c/GiveMeSomeCredit/",
+    "status": "active",
+    "processing_date": "2023-06-20 21:39:06",
+    "md5_checksum": "53fbc48b682ecfac16697dfea4cb3c39"
+  }
+}

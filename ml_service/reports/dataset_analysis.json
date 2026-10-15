@@ -1,0 +1,125 @@
+{
+  "raw_records": 150000,
+  "raw_positive_records": 10026,
+  "raw_positive_rate": 0.06684,
+  "used_records": 118412,
+  "excluded_records": 31588,
+  "positive_records": 8208,
+  "positive_rate": 0.06931729892240651,
+  "exclusions_sequential_nonoverlapping": [
+    {
+      "reason": "invalid_target",
+      "count": 0
+    },
+    {
+      "reason": "missing_or_nonpositive_income",
+      "count": 31365
+    },
+    {
+      "reason": "invalid_or_underage_age",
+      "count": 1
+    },
+    {
+      "reason": "invalid_debt_ratio",
+      "count": 0
+    },
+    {
+      "reason": "missing_negative_or_fractional_late_count",
+      "count": 0
+    },
+    {
+      "reason": "anomalous_late_codes_96_98",
+      "count": 141
+    },
+    {
+      "reason": "exact_duplicate_raw_record",
+      "count": 81
+    }
+  ],
+  "raw_missing_values": {
+    "SeriousDlqin2yrs": 0,
+    "RevolvingUtilizationOfUnsecuredLines": 0,
+    "age": 0,
+    "NumberOfTime30-59DaysPastDueNotWorse": 0,
+    "DebtRatio": 0,
+    "MonthlyIncome": 29731,
+    "NumberOfOpenCreditLinesAndLoans": 0,
+    "NumberOfTimes90DaysLate": 0,
+    "NumberRealEstateLoansOrLines": 0,
+    "NumberOfTime60-89DaysPastDueNotWorse": 0,
+    "NumberOfDependents": 3924
+  },
+  "raw_anomalous_late_code_counts": {
+    "NumberOfTime30-59DaysPastDueNotWorse": {
+      "96": 5,
+      "98": 264
+    },
+    "NumberOfTime60-89DaysPastDueNotWorse": {
+      "96": 5,
+      "98": 264
+    }
+  },
+  "eligible_feature_summary": {
+    "age": {
+      "count": 118412.0,
+      "mean": 51.366711144140794,
+      "std": 14.366792266106739,
+      "min": 21.0,
+      "1%": 24.0,
+      "50%": 51.0,
+      "95%": 76.0,
+      "99%": 86.0,
+      "max": 103.0
+    },
+    "DebtRatio": {
+      "count": 118412.0,
+      "mean": 5.301799569142629,
+      "std": 199.9621194873257,
+      "min": 0.0,
+      "1%": 0.0,
+      "50%": 0.2929436065,
+      "95%": 0.9831860071999999,
+      "99%": 3.0,
+      "max": 61106.5
+    },
+    "NumberOfTime30-59DaysPastDueNotWorse": {
+      "count": 118412.0,
+      "mean": 0.26288720737763066,
+      "std": 0.7209689096016703,
+      "min": 0.0,
+      "1%": 0.0,
+      "50%": 0.0,
+      "95%": 2.0,
+      "99%": 3.0,
+      "max": 13.0
+    },
+    "NumberOfTime60-89DaysPastDueNotWorse": {
+      "count": 118412.0,
+      "mean": 0.06774651217781981,
+      "std": 0.3365576370490596,
+      "min": 0.0,
+      "1%": 0.0,
+      "50%": 0.0,
+      "95%": 1.0,
+      "99%": 2.0,
+      "max": 11.0
+    }
+  },
+  "splits": {
+    "train": {
+      "records": 82888,
+      "positive_records": 5746,
+      "positive_rate": 0.06932245922208281
+    },
+    "validation": {
+      "records": 17762,
+      "positive_records": 1231,
+      "positive_rate": 0.06930525841684496
+    },
+    "test": {
+      "records": 17762,
+      "positive_records": 1231,
+      "positive_rate": 0.06930525841684496
+    }
+  }
+}

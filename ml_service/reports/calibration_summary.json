@@ -1,0 +1,20 @@
+{
+  "validation": {
+    "observed_positive_rate": 0.06930525841684496,
+    "mean_predicted_probability": 0.06921674581031019,
+    "mean_prediction_minus_observed": -8.851260653476578e-05,
+    "ece_quantile_bins": 0.0073369825292310675,
+    "diagnostic_calibration_intercept": 0.038452229833138195,
+    "diagnostic_calibration_slope": 1.0154368551218715,
+    "note": "Intercepto ideal 0 y pendiente ideal 1. Ajuste diagnóstico sobre este conjunto; no modifica el pipeline ni se usa para recalibrar. ECE depende del binning."
+  },
+  "test": {
+    "observed_positive_rate": 0.06930525841684496,
+    "mean_predicted_probability": 0.07081689288946216,
+    "mean_prediction_minus_observed": 0.001511634472617207,
+    "ece_quantile_bins": 0.009889406178533231,
+    "diagnostic_calibration_intercept": -0.14811513890937159,
+    "diagnostic_calibration_slope": 0.9487424159301048,
+    "note": "Intercepto ideal 0 y pendiente ideal 1. Ajuste diagnóstico sobre este conjunto; no modifica el pipeline ni se usa para recalibrar. ECE depende del binning."
+  }
+}

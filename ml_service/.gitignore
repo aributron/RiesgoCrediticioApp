@@ -1,0 +1,9 @@
+﻿.venv/
+.runtime/
+.cache/
+__pycache__/
+*.py[cod]
+data/raw/*.arff
+data/raw/*.csv
+data/raw/*.part
+

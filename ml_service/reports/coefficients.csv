@@ -1,0 +1,5 @@
+transformed_feature,coefficient_after_scaling
+debt_ratio_log1p__DebtRatio,0.05373620961484273
+remaining__age,-0.4176558430732417
+remaining__NumberOfTime30-59DaysPastDueNotWorse,0.4433914102206732
+remaining__NumberOfTime60-89DaysPastDueNotWorse,0.34424402870565035
